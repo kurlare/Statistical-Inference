@@ -39,7 +39,7 @@ mean_tg_plot
 
 ```
 
-From looking at the raw data, it would appear that the vitamin C group has greater variability.  It also appears that in general, the orange juice group grew larger and more consistently.  Looking at the second figure, which plots the means for each dosage level, OJ seems to be a more effective supplement, beating the VC group a the 0.5 and 1.0 levels, and essentially tying at the 2.0 level.  Finally, the mean for each supplement across all doses is higher for OJ (20.66) than VC (16.96).  When we check the variance for each supplement we find that OJ is lower (43.63) than VC (68.33), which confirms what we can intuit from the plots (see appendix for R code with these values).
+From looking at the raw data, it would appear that the vitamin C group has greater variability.  When we check the variance for each supplement we find that OJ is lower (43.63) than VC (68.33), which confirms what we can intuit from the plots (see appendix for R code with these values).  It also appears that in general, the orange juice group grew larger and more consistently.  Looking at the second figure, which plots the means for each dosage level, OJ seems to be a more effective supplement, beating the VC group a the 0.5 and 1.0 levels, and essentially tying at the 2.0 level.  Finally, the mean for each supplement across all doses is higher for OJ (20.66) than VC (16.96).  
 
 In terms of dosage levels it appears that each increment increases the growth rates significantly, despite some overlap.  Also, the initial dose for the VC group appears to have the relatively little effect, and the 1.0-2.0 increment for the OJ group appears weaker than the other relationships.
 
@@ -79,7 +79,7 @@ While the data does show that we can reject the null hypothesis with 95% confide
 
 ###Conclusions
 
-Using basic statistical inference we may say with 95% confidence that when comparing tooth growth, there's no statistical difference between supplements, but there is a statistical difference between dosage levels.
+Using statistical inference we may say with 95% confidence that when comparing tooth growth the supplement given might not make a difference.  However, the data shows that each dosage interval - independent of supplement - does make a difference.
 
 ##Appendix
 ```{r tooth growth plot by dose, echo=FALSE, fig.height=3.3, fig.width = 6}
@@ -99,6 +99,9 @@ supp_density
 ```{r, tidy=TRUE, collapse=TRUE}
 dose_by_supp_means <- summarize(group_by(ToothGrowth, supp, dose), mean(len))
 dose_by_supp_means ## Mean for each dose by supplement
+
+var(oj$len) ## OJ Variance
+var(vc$len) ## VC Variance
 
 var(smldose$len)  ## Variance for 0.5 dose
 sd(smldose$len) ## SD for 0.5 dose
