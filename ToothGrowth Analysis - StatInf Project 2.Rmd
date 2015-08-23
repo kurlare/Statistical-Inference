@@ -79,7 +79,7 @@ While the data does show that we can reject the null hypothesis with 95% confide
 
 ###Conclusions
 
-Using statistical inference we may say with 95% confidence that when comparing tooth growth the supplement given might not make a difference.  However, the data shows that each dosage interval - independent of supplement - does make a difference.
+Using statistical inference we may say with 95% confidence that when comparing tooth growth the supplement given will not make a difference.  Additionally, we are 95% confident that the growth achieved is dependent on the dosage given.  
 
 ##Appendix
 ```{r tooth growth plot by dose, echo=FALSE, fig.height=3.3, fig.width = 6}
