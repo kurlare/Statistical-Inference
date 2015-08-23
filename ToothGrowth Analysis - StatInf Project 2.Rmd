@@ -1,0 +1,109 @@
+---
+title: "Analysis of Tooth Growth Dataset"
+author: "Rafi Kurlansik"
+date: "August 20, 2015"
+output: pdf_document
+graphics: yes
+---
+```{r include = FALSE}
+require(datasets)
+require(ggplot2)
+require(dplyr)
+require(gridExtra)
+```
+
+###Overview
+ 
+In this paper we will use R to explore the `ToothGrowth` dataset.  `ToothGrowth` contains data from an experiment done to see the effects of vitamin C on the growth of teeth in guinea pigs.  Pigs were given vitamin C in two different supplement solutions (orange juice and ascorbic acid), in different doses of 0.5, 1.0, and 2.0 mg/day.  Each observation in the dataset represents a different pig.  Thus, these are unpaired measurements and we will use the `t.test` function to determine, with 95% confidence, how close the means are between two samples.  We will compare **a)**the group given orange juice with the group given vitamin C, and **b)** dosage levels to eachother.  
+
+###Exploratory Data Analysis
+
+First, let's take a look at the raw data and see if there are any relationships that stand out.
+
+```{r, comment= '##', collapse=TRUE,tidy=TRUE}
+tgs <- group_by(ToothGrowth, supp, dose)
+oj <- tgs[31:60,]
+vc <- tgs[1:30,]
+supp_means <- summarize(group_by(ToothGrowth, supp), mean(len))
+dose_by_supp_means <- summarize(group_by(ToothGrowth, supp, dose), mean(len))
+colnames(dose_by_supp_means) <- c("supp", "len", "dose")
+supp_means
+```
+
+```{r raw data plot by supplement, echo=FALSE, fig.height = 3, fig.width=3.7, fig.show='hold', fig.cap = "Tooth Growth rates by Supplement; Dosage Means"}
+raw_plot <- ggplot(tgs, aes(dose, len, color = supp)) + geom_point(size = 3) + labs(title = "Raw Data", x = "Dose - mg/day", y = "Tooth Growth Length") + theme_bw() + facet_grid(. ~ supp) + theme(axis.text.x = element_text(size = 5))
+raw_plot
+
+mean_tg_plot <- ggplot(dose_by_supp_means, aes(len, dose, color = supp)) + geom_line(size = 1) + geom_point(size = 3, color = "darkblue") + labs(title = "Dosage Means", x = "Dose - mg/day", y = "Tooth Growth Length") + theme_bw() + facet_grid(. ~ supp) + theme(axis.text.x = element_text(size = 5))
+mean_tg_plot
+
+```
+
+From looking at the raw data, it would appear that the vitamin C group has greater variability.  It also appears that in general, the orange juice group grew larger and more consistently.  Looking at the second figure, which plots the means for each dosage level, OJ seems to be a more effective supplement, beating the VC group a the 0.5 and 1.0 levels, and essentially tying at the 2.0 level.  Finally, the mean for each supplement across all doses is higher for OJ (20.66) than VC (16.96).  When we check the variance for each supplement we find that OJ is lower (43.63) than VC (68.33), which confirms what we can intuit from the plots (see appendix for R code with these values).
+
+In terms of dosage levels it appears that each increment increases the growth rates significantly, despite some overlap.  Also, the initial dose for the VC group appears to have the relatively little effect, and the 1.0-2.0 increment for the OJ group appears weaker than the other relationships.
+
+### Confidence Intervals
+
+We would like to know if our intial impressions of this data are statistically valid, or if the small sample size is misleading.  Specifically, *are differences in the mean between the OJ supplement and the VC supplement great enough that we can definitively say OJ is the better choice for tooth growth?*  Using a t-test with 95% confidence intervals will give us the answer we are looking for.  In this test, we are ignoring the dosage levels and focusing on the two groups of 30 - the orange juice group and the vitamin C group.  Our null hypothesis for all tests will be that the difference in means is 0..
+
+```{r, tidy=TRUE, echo=FALSE}
+t.test(oj$len, vc$len, var.equal = FALSE, conf.level = 0.95)
+
+```
+With confidence intervals -0.17 and 7.27 we cannot conclude that OJ is a better supplement.  If our null hypothesis was true, then we would get samples like these approximately 6% of the time, which is above our threshold of 5%.   
+
+Turning our attention to dosage levels, we can use `t.test` to compare 0.5 to 1.0, and 1.0 to 2.0.  If differences of the mean fail to pass through 0 at 95% confidence, then we can determine that one dosage probably offers a distinct advantage over another.  Looking at the raw data by dosage levels (see appendix), it does appear that the increment from 0.5 to 1.0 is more effective than 1.0 to 2.0.  Let's see if the data shows the same thing.
+
+```{r}
+smldose <- tgs[tgs$dose == 0.5, 1]
+meddose <- tgs[tgs$dose == 1.0, 1]
+lrgdose <- tgs[tgs$dose == 2.0, 1]
+t.test(smldose$len, meddose$len, var.equal = FALSE, conf.level = 0.95)
+```
+As expected, the 0.5 to 1.0 increment creates a statistically significant growth boost.  The p-value is so small that we are well within our threshhold of 95% confidence.  How about the 1.0 to 2.0 dosage groups?
+
+```{r}
+t.test(meddose$len, lrgdose$len, var.equal = FALSE, conf.level = 0.95)
+```
+Here too, the intervals do not pass through zero, though there is a slightly greater p-value. We can conclude with 95% confidence that each dosage level is a statistically significant boost to tooth growth rates.  The variance and standard deviations shrink as dosages increase in size (see appendix for values).  Further experimentation is needed, but perhaps this is an initial signal of the upper limit on the efficacy of vitamin C based supplements on tooth growth rates in guinea pigs.
+
+As our final test, lets revisit the OJ group and compare the 1.0-2.0 increments.
+
+```{r}
+oj_meddose <- oj[oj$dose == 1.0, 1]
+oj_lrgdose <- oj[oj$dose == 2.0, 1]
+t.test(oj_meddose$len, oj_lrgdose$len, var.equal = FALSE, conf.level = 0.95)
+```
+While the data does show that we can reject the null hypothesis with 95% confidence, our eyes did not deceive us.  Since our p-value is 3.92%, if we increased our desired confidence by just 1.09% more, to 96.09%, zero would be included in the confidence intervals and we would not be able to say that increasing the dosage from 1.0 to 2.0 provides a significant boost.   
+
+###Conclusions
+
+Using basic statistical inference we may say with 95% confidence that when comparing tooth growth, there's no statistical difference between supplements, but there is a statistical difference between dosage levels.
+
+##Appendix
+```{r tooth growth plot by dose, echo=FALSE, fig.height=3.3, fig.width = 6}
+by_dose_plot <- ggplot(tgs, aes(dose, len)) + geom_point(size = 3, color = "darkgreen") + theme_bw() + labs(title = "Tooth Growth By Dose", x = "Dose - mg/day", y = "Tooth Length")
+by_dose_plot
+```
+
+```{r, echo=FALSE, fig.width = 5, fig.height = 3.3, fig.align='center'}
+supp_density <- ggplot(tgs, aes(x = len)) + geom_density(aes(group=supp, color = supp, fill = supp, alpha = 0.3)) + labs(title = "Distributions by Supplement", x = "Tooth Length", y = "Density")
+
+dose_density <- ggplot(tgs, aes(x = len)) + geom_density(aes(group=dose, color = dose, fill = dose, alpha = 0.3)) + labs(title = "Distributions by Dosage", x = "Tooth Length", y = "Density")
+dose_density
+supp_density
+
+```
+
+```{r, tidy=TRUE, collapse=TRUE}
+dose_by_supp_means <- summarize(group_by(ToothGrowth, supp, dose), mean(len))
+dose_by_supp_means ## Mean for each dose by supplement
+
+var(smldose$len)  ## Variance for 0.5 dose
+sd(smldose$len) ## SD for 0.5 dose
+var(meddose$len) ## Variance for 1.0 dose
+sd(meddose$len) ## SD for 1.0 dose
+var(lrgdose$len) ## Variance for 2.0 dose
+sd(lrgdose$len) ## SD for 2.0 dose
+```

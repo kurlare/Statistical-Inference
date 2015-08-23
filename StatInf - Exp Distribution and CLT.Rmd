@@ -1,0 +1,103 @@
+---
+title: "Exploring Exponential Distributions and the Central Limit Theorem"
+author: "Rafi Kurlansik"
+date: "Monday, August 17, 2015"
+output: pdf_document
+graphics: yes
+---
+
+###Overview
+
+In this paper we will use R to explore the Central Limit Theorem as applied to an exponential distribution.  First we will review the theoretical definitions of an exponential distribution.  Then we will run a simulation to generate data that can be used to create a sampling distribution.  Once we have our sampling distribution, we will **a)** *compare the sample mean to the theoretical mean,* **b)** *compare the sample variance to the theoretical variance,* and **c)** *show that the sampling distribution is essentially normal.*
+
+
+
+##The Exponential Distribution
+
+The probability density function of an exponential distribution is $f(x) = \lambda e^{-\lambda{x}}$.  Other important definitions for this distribution include the mean, $E[X] = \frac{1}{\lambda}$, the variance, $\sigma^2 = \frac{1}{\lambda^2}$, and the standard deviation, $\sigma = \sqrt{\frac{1}{\lambda^2}}$.  In this case, the standard deviation is equal to the mean, so we can simply say $\sigma = \frac{1}{\lambda} = E[X] = \mu$.
+
+To begin our investigation, let's set the seed to ensure reproducible results, generate some random exponentials, and build a plot.  For this assignment we will be setting $\lambda$ to 0.2. 
+
+```{r}
+set.seed(5)
+expnts <- rexp(1000, 0.2)
+```
+
+```{r fig.width=4.5, fig.align='center', fig.height=3, echo=FALSE}
+hist(expnts, main = "Exponential Distribution", xlab = "Data", breaks = 20, col = "lightgreen", freq=FALSE)
+```
+
+Let's look at some of the features of this distribution!  
+
+```{r collapse = TRUE}
+summary(expnts)
+sd(expnts)
+var(expnts)
+```
+Standard Deviation $\sigma = 5.108$, Variance $\sigma^2 = 26.094$, Mean $\mu = 5.013$.  Notice $\sigma$ is roughly equal to $\mu$ in this case.  This supports what was theoretically shown above - in an exponential distribution, the standard deviation is equal to the mean.  Figure 1 in the appendix illustrates this.
+
+##The Sampling Distribution of the Sample Mean
+
+Let's run the simulation 1000 more times using the same seed, each time taking a sample of 40 values and storing their mean in a new variable, called `smplmns`.  Here, the equations for the variance and standard deviation are slightly different:  $\sigma_{m}^2 = \frac{\sigma^2}{N}$, and $\sigma_{m} = \frac{\sigma}{\sqrt{N}}$.  We will store the results of these formulas in variables `sample_variance` and `sample_std`.  
+
+We can use the `sapply()` function to run it many times, and the `sample()` function to grab our samples.  We will want to replace the samples so we don't run out of them!  
+
+```{r collapse = TRUE}
+set.seed(5)
+expnts <- rexp(1000, 0.2)
+smplmns <- sapply(1:1000, function(x) mean(sample(expnts, 40, replace = T)))
+summary(smplmns)
+sample_variance <- (sd(expnts)^2)/40
+sample_std <- (sd(expnts))/sqrt(40)
+```
+
+
+##Conclusions
+
+The data speaks! Before we look at pretty plots, lets compare the sample mean to the theoretical mean.
+
+As we stated at the beginning, the mean for an exponential distribution is $E[X] = \frac{1}{\lambda}$.  In this case, $\lambda = 0.2$, so $\frac{1}{\lambda} = \frac{1}{0.2} = 5$ is our theoretical mean.  The sampling distribution mean is 5.024, *strongly suggesting that the mean of the distribution of sample means is roughly equivalent to the theoretical mean of the underlying distribution.*  I suspect that if we took 10,000 sample means the numbers would be even closer to equal.  Figure 2 in the appendix provides a visual representation of this relationship.  
+
+Next, lets compare the sample variance to the theoretical variance.  For the sampling distribution, the population standard deviation of 5 and sample size of 40 gives us theoretical variance $\sigma_{m}^2 = \frac{\sigma^2}{N} = \frac{5^2}{40} = 0.625$, and standard deviation $\sigma_{m} = \frac{\sigma}{\sqrt{N}} = \frac{5}{\sqrt{40}} = 0.790$.  If we look at our sample values, 
+```{r collapse = TRUE}
+sample_variance
+sample_std
+```
+*We can see that they come very close to our theoretical values!* 
+
+
+```{r fig.width = 6, fig.height = 3, echo=FALSE, fig.align='center'}
+hist(smplmns, freq = FALSE, main = "Distribution of Sample Means",
+     breaks = 25, xlab = "Means", ylab = "Density", col = "lightgreen", xlim = c(2, 9))
+curve(dnorm(x, mean = mean(smplmns), sd = sd(smplmns)), add = TRUE, col = "darkblue", lwd = 2)
+```
+To finish, after plotting the means of our samples from an exponential distribution 1000 times, we have what appears to essentially be a normal distribution (in light green).  The overlay of a probability density function for a normal distribution (here in dark blue) confirms this.  *With this plot we have shown the sampling distribution to be approximately normal.*
+
+In summary, we have shown via simulation that the both the sampling mean and variance are approximately equal to their theoretical counterparts, and that the sampling distribution of the sample mean is approximately normal.
+
+## Appendix
+```{r echo=FALSE, fig.height=4, fig.width=7}
+hist(expnts, main = "Figure 1", xlab = "Standard deviation of an exponential distribution is equal to its mean", breaks = 20, col = "lightgreen", freq=FALSE)
+par(srt = 90)
+curve(dexp(x, rate = 0.2), add = TRUE, col = "darkblue", lwd = 2)
+abline(v = mean(expnts), col = "red", lwd = 1)
+text(mean(expnts), 0.13, pos = 3, col = "red", "Mean")
+abline(v = sd(expnts), col = "black", lwd = 1)
+text(sd(expnts), 0.08, pos = 4, col = "black", "Std Dev.")
+```
+
+```{r fig.height = 5, fig.width=8, echo=FALSE}
+par(mfrow = c(1, 2), oma=c(0,0,2,0), srt = 90)
+hist(smplmns, freq = FALSE, main = "Sampling Distribution",
+     breaks = 25, xlab = "Mean = 5.024", ylab = "Density", col = "lightgreen", xlim = c(2, 9))
+curve(dnorm(x, mean = mean(smplmns), sd = sd(smplmns)), add = TRUE, col = "darkblue", lwd = 1)
+abline(v=mean(smplmns), col = "red", lwd = 2)
+text(mean(smplmns), 0.2, col = "red", pos = 3, "Mean", lwd = 2)
+
+hist(expnts, main = "Exponential Distribution", xlab = "Theoretical Mean = 5", breaks = 20, col = "lightgreen", freq=FALSE)
+curve(dexp(x, rate = 0.2), add = TRUE, col = "darkblue", lwd = 2)
+abline(v = 5, col = "darkblue", lwd = 1)
+text(5, 0.13, pos = 3, col = "darkblue", "Mean")
+title("Figure 2: Sampling Distribution Mean ~= Exponential Distribution Mean", outer = TRUE)
+```
+
